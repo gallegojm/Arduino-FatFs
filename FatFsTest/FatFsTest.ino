@@ -12,6 +12,7 @@
   Redistributions of source code must retain the above copyright notice.
 
     Tested on Arduino Due and Arduino Mega 2560 with IDE 1.5.5 and 1.5.8
+    Remember to modify value of SD_CS_PIN according to your hardware
 */
 
 #include <Streaming.h>
