@@ -1,5 +1,5 @@
 /*
-  Test of a class to access the FatFs module
+  Demostration of a class to access the FatFs module
     on Arduino Due by Jean-Michel Gallego
   FatFs module is a generic FAT file system for
     small embedded systems developped by ChaN.
