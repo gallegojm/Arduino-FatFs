@@ -28,9 +28,12 @@ extern "C" int sd_disk_read( uint8_t * buff, uint32_t sector, uint32_t count )
 {
   uint8_t * b = buff;
   
-  for( int n = 0; n < count; n ++ )
+  for( uint32_t n = 0; n < count; n ++ )
+  {
     if( card.readBlock( sector + n, b ) == 0 )
       return 1;
+    b += _MIN_SS;
+  }
   return 0;
 }
 
@@ -38,9 +41,12 @@ extern "C" int sd_disk_write( uint8_t * buff, uint32_t sector, uint32_t count )
 {
   uint8_t * b = buff;
   
-  for( int n = 0; n < count; n ++ )
+  for( uint32_t n = 0; n < count; n ++ )
+  {
     if( card.writeBlock( sector + n, b ) == 0 )
       return 1;
+    b += _MIN_SS;
+  }
   return 0;
 }
 
