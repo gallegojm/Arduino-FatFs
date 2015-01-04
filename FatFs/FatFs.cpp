@@ -104,14 +104,14 @@ bool FatFsClass::begin( uint8_t chipSelectPin, uint8_t divisor )
   return ffs_result == 0;
 }
 
-// Return capacity of card in bytes
+// Return capacity of card in Megabytes
 
 int32_t FatFsClass::capacity()
 {
-  return ( ffs.n_fatent - 2 ) * ffs.csize * _MIN_SS;
+  return ( ffs.n_fatent - 2 ) * ffs.csize >> 11;
 }
 
-// Return free space in bytes
+// Return free space in Megabytes
 
 int32_t FatFsClass::free()
 {
@@ -120,7 +120,7 @@ int32_t FatFsClass::free()
   
   if( f_getfree( "0:", & fre_clust, &fs ) != 0 )
     return -1;
-  return fre_clust * ffs.csize * _MIN_SS;
+  return fre_clust * ffs.csize >> 11;
 }
 
 // Return last error value
@@ -230,10 +230,18 @@ DirFs::~DirFs()
 //   dirPath : absolute name of directory
 // Return true if ok
 
-bool DirFs::open( char * dirPath )
+bool DirFs::openDir( char * dirPath )
 {
   char * dirPath0 = dirPath;
   ffs_result = f_opendir( & dir, dirPath0 );
+  return ffs_result == FR_OK;
+}
+
+// Close the open directory
+
+bool DirFs::closeDir()
+{
+  ffs_result = f_closedir( & dir );
   return ffs_result == FR_OK;
 }
 
@@ -274,14 +282,6 @@ uint32_t DirFs::fileSize()
 {
   return finfo.fsize;
 }
-
-/*
-bool FatFsClass::close()
-{
-  ffs_result = f_closedir( & dir );
-  return ffs_result == FR_OK;
-}
-*/
 
 /* ===========================================================
 
@@ -372,8 +372,8 @@ int16_t FileFs::readString( char * str, int len )
 }
 
 // Read a character from the file
-// Return read char or 0 if an error occurs
-// In case of 0 returned, must call FatFs.error() to know
+// Return read char or -1 if an error occurs
+// In case of -1 returned, must call FatFs.error() to know
 //   if this is an error or null character
 
 char FileFs::readChar()
@@ -382,7 +382,7 @@ char FileFs::readChar()
   uint32_t nrd;
   
   ffs_result = f_read( & ffile, & car, 1, & nrd );
-  return nrd == 1 ? car : 0;
+  return nrd == 1 ? car : -1;
 }
 
 // Read next literal integer from file
@@ -396,7 +396,7 @@ uint16_t FileFs::readInt()
   // skip characters they are not integer
   do
     c = readChar();
-  while( c >= 0 && ! isdigit( c ));
+  while( c != -1 && ! isdigit( c ));
   while( isdigit( c ))
   {
     i = 10 * i + c - '0';
@@ -416,7 +416,7 @@ uint16_t FileFs::readHex()
   // skip characters they are not hexadecimal
   do
     c = readChar();
-  while( c >= 0 && ! isxdigit( c ));
+  while( c != -1 && ! isxdigit( c ));
   while( isxdigit( c ))
   {
     i = 16 * i + c;
@@ -437,7 +437,7 @@ uint16_t FileFs::readHex()
 
 // Return the current read/write pointer of a file
 
-uint32_t FileFs::getCursor()
+uint32_t FileFs::curPosition()
 {
   return f_tell( & ffile );
 }
@@ -448,7 +448,7 @@ uint32_t FileFs::getCursor()
 // In case cur is greater than file size and file is opened in write mode,
 //   size of file is expanded
 
-bool FileFs::seekCursor( uint32_t cur )
+bool FileFs::seekSet( uint32_t cur )
 {
   ffs_result = f_lseek( & ffile, cur );
   return ffs_result == FR_OK;

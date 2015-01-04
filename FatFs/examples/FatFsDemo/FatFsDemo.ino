@@ -1,5 +1,5 @@
 /*
-  Demostration of a class to access the FatFs module
+  Test of a class to access the FatFs module
     on Arduino Due by Jean-Michel Gallego
   FatFs module is a generic FAT file system for
     small embedded systems developped by ChaN.
@@ -11,20 +11,12 @@
 #include <FatFs.h>
 
 // Modify according to your hardware
-#define SD_CS_PIN 9    // Chip Select for SD card reader on LaRocola
-// #define SD_CS_PIN 4    // Chip Select for SD card reader with Ethernet shield
+// #define SD_CS_PIN 9    // Chip Select for SD card reader on LaRocola
+#define SD_CS_PIN 4    // Chip Select for SD card reader with Ethernet shield
 
 void setup()
 {
   int res;
-  
-  delay( 1000 );
-
-  Serial.begin( 9600 );
-  Serial << "Testing FatFs on Arduino Due" << endl
-         << "Press a key to start" << endl << endl;
-  while( Serial.read() < 0 )
-    ;
 
   // If other chips are connected to SPI bus, set to high the pin connected to their CS
 /*
@@ -34,19 +26,26 @@ void setup()
   digitalWrite( 4, HIGH );
 */
 
+  Serial.begin( 9600 );
+  Serial << "Testing FatFs on Arduino" << endl
+         << "Press a key to start" << endl << endl;
+  while( Serial.read() < 0 )
+    ;
+  delay( 400 );
+
   // Mount SD card
   res = FatFs.begin( SD_CS_PIN, SPI_HALF_SPEED );
   printError( res, "Unable to mount SD card" );
   Serial << "SD card mounted" << endl;
 
   // Show capacity and free space of SD card
-  Serial << "Capacity of card:   " << FatFs.capacity() << " Bytes" << endl;
-  Serial << "Free space on card: " << FatFs.free() << " Bytes" << endl;
+  Serial << "Capacity of card:   " << FatFs.capacity() << " MBytes" << endl;
+  Serial << "Free space on card: " << FatFs.free() << " MBytes" << endl;
 
   // List root directory
   Serial << endl << "List of directories and files in root:" << endl;
   DirFs dir;
-  if( dir.open( "/" ))
+  if( dir.openDir( "/" ))
     while( dir.nextFile())
     {
       Serial << dir.fileName() << "\t";
@@ -101,7 +100,7 @@ void setup()
   // Read content of file
   Serial << endl << "Content of '" << fileName << "' is:" << endl;
   char line[ 64 ];
-  file.seekCursor( 0 ); // set cursor to beginning of file
+  file.seekSet( 0 ); // set cursor to beginning of file
   while( file.readString( line, sizeof( line )) >= 0 )
     Serial << line << endl;
 
@@ -118,9 +117,13 @@ void setup()
   res = FatFs.rename( fileName, newName );
   printError( res, "Error renaming file" );
 
-  // Show content of directory
+  // Show content of directories
   Serial << endl << "Content of '" << dirName << "' :" << endl;
-  if( dir.open( "/New Directory" ))
+  if( dir.openDir( "/New Directory" ))
+    while( dir.nextFile())
+      Serial << dir.fileName() << endl;
+  Serial << endl << "Content of root :" << endl;
+  if( dir.openDir( "/" ))
     while( dir.nextFile())
       Serial << dir.fileName() << endl;
 
@@ -138,7 +141,7 @@ void setup()
     c = file.readChar();
     Serial << c;
   }
-  while( c != '\n' && c != 0 );
+  while( c != '\n' && c != -1 );
   // Read next lines with readString() and print length of lines
   int l;
   while( ( l = file.readString( line, sizeof( line ))) >= 0 )
@@ -157,6 +160,7 @@ void setup()
   printError( res, "Error deleting directory" );
 
   Serial << endl;
+  Serial << "Test ok!" << endl;
 }
 
 void loop()

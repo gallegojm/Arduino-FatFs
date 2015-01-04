@@ -42,7 +42,8 @@ public:
   DirFs();
   ~DirFs();
   
-  bool     open( char * dirPath );
+  bool     openDir( char * dirPath );
+  bool     closeDir();
   bool     nextFile();
   bool     rewind();
   bool     isDir();
@@ -73,8 +74,8 @@ public:
   uint16_t readInt();
   uint16_t readHex();
 
-  uint32_t getCursor();
-  bool     seekCursor( uint32_t cur );
+  uint32_t curPosition();
+  bool     seekSet( uint32_t cur );
 
   uint32_t fileSize();
   
