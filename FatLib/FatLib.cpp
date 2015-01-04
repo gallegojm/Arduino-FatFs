@@ -1,5 +1,5 @@
 #include "FatLib.h"
-#if FAT_SYST == 1
+#if FAT_SYST == 0
 
 ExtFat sd;
 
