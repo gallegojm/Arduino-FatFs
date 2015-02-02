@@ -1,5 +1,21 @@
-#include "FatLib.h"
+/*
+ * Class FatLib by Jean-Michel Gallego
+ * Copyright (c) 2015 by Jean-Michel Gallego
+ *
+ * FatLib allow you to easily switch between libraries SdFat and FatFs
+ *   by setting identifier FAT_SYST at beginning of file FatLib.h
+ 
+ *   SdFat is an Arduino library written by William Greiman
+ *    that provides read/write access to FAT16/FAT32
+ *    file systems on SD/SDHC flash cards.
+ *   
+ *   FatFs module is a generic FAT file system for
+ *    small embedded systems developed by ChaN.
+ *
+ * You must install SdFat and FatFs in order to use FatLib
+*/
 
+#include "FatLib.h"
 #if FAT_SYST == 0
 
 ExtFat sd;

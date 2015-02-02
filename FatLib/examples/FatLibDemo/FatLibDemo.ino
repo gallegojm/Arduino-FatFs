@@ -17,7 +17,8 @@
 #if FAT_SYST == 0
   #include <SdFat.h>
 #else
-  #include <SD.h>
+  //#include <SD.h>
+  #include <SdSpiCard.h>
   #include <FatFs.h>
 #endif
 
