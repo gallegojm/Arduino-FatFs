@@ -7,7 +7,7 @@
 
 #include <Streaming.h>
 #include <SPI.h>
-#include <SD.h>
+#include <SdSpiCard.h>
 #include <FatFs.h>
 
 // Modify according to your hardware

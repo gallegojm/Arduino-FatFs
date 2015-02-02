@@ -26,28 +26,12 @@ extern "C" int sd_initialize()
 
 extern "C" int sd_disk_read( uint8_t * buff, uint32_t sector, uint32_t count )
 {
-  uint8_t * b = buff;
-  
-  for( uint32_t n = 0; n < count; n ++ )
-  {
-    if( card.readBlock( sector + n, b ) == 0 )
-      return 1;
-    b += _MIN_SS;
-  }
-  return 0;
+  return card.readBlocks( sector, buff, count ) ? 0 : 1;
 }
 
 extern "C" int sd_disk_write( uint8_t * buff, uint32_t sector, uint32_t count )
 {
-  uint8_t * b = buff;
-  
-  for( uint32_t n = 0; n < count; n ++ )
-  {
-    if( card.writeBlock( sector + n, b ) == 0 )
-      return 1;
-    b += _MIN_SS;
-  }
-  return 0;
+  return card.writeBlocks( sector, buff, count ) ? 0 : 1;
 }
 
 extern "C" int sd_disk_ioctl( uint8_t cmd )
@@ -95,10 +79,10 @@ uint8_t ffs_result;
 //   divisor : SPI divisor = SPI_HALF_SPEED (default), SPI_FULL_SPEED
 // Return true if ok
 
-bool FatFsClass::begin( uint8_t chipSelectPin, uint8_t divisor )
+bool FatFsClass::begin( uint8_t csPin, uint8_t sckDiv )
 {
   ffs_result = 0;
-  if( ! card.init( divisor, chipSelectPin ))
+  if( ! card.init( sckDiv, csPin ))
     return false;
   ffs_result = f_mount( & ffs, "", 1 );
   return ffs_result == 0;

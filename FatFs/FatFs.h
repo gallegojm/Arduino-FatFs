@@ -9,7 +9,7 @@
 #define FATFS_H
 
 #include <Arduino.h>
-#include <SD.h>
+#include <SdSpiCard.h>
 #include "ff.h"
 #include "diskio.h"
 
@@ -18,7 +18,7 @@ class FatFsClass
 public:
   FatFsClass() {};
   
-  bool     begin( uint8_t chipSelectPin, uint8_t sckDivisor = SPI_HALF_SPEED );
+  bool     begin( uint8_t csPin, uint8_t sckDiv = SPI_HALF_SPEED );
   int32_t  capacity();
   int32_t  free();
   uint8_t  error();
