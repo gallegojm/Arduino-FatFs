@@ -17,7 +17,7 @@
 
 // Set FAT_SYST to 0 to use library SdFat
 // Set FAT_SYST to 1 to use library FatFs
-#define FAT_SYST 0
+#define FAT_SYST 1
 
 #if FAT_SYST == 0
   #include <SdFat.h>
@@ -28,7 +28,6 @@
   #define FAT_FILE ExtFile
   #define FAT_DIR  ExtDir
 #else
-  #include <SD.h>
   #include <FatFs.h>
 
   #define FAT      FatFs
@@ -38,7 +37,7 @@
   #define O_READ   FA_READ
   #define O_WRITE  FA_WRITE
   #define O_RDWR   FA_READ | FA_WRITE
-  #define O_CREATE FA_CREATE_ALWAYS
+  #define O_CREAT  FA_CREATE_ALWAYS
 #endif
 
 #ifndef FAT_LIB_H

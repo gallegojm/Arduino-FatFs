@@ -17,14 +17,12 @@
 #if FAT_SYST == 0
   #include <SdFat.h>
 #else
-  //#include <SD.h>
-  #include <SdSpiCard.h>
   #include <FatFs.h>
 #endif
 
 // Modify according to your hardware
-#define SD_CS_PIN 9    // Chip Select for SD card reader on LaRocola
-// #define SD_CS_PIN 4    // Chip Select for SD card reader with Ethernet shield
+// #define SD_CS_PIN 9    // Chip Select for SD card reader on LaRocola
+S#define SD_CS_PIN 4    // Chip Select for SD card reader with Ethernet shield
 
 void setup()
 {
