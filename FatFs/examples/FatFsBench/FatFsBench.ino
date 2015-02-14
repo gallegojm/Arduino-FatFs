@@ -5,11 +5,12 @@
 
 #include <Streaming.h>
 #include <SPI.h>
+#include <SdSpiCard.h>
 #include <FatFs.h>
 
 // SD chip select pin
-// const uint8_t SD_CS_PIN = 9;
-const uint8_t SD_CS_PIN = 4;
+const uint8_t SD_CS_PIN = 9;
+// const uint8_t SD_CS_PIN = SS;
 
 // Constants for test configuration
 const size_t BUF_SIZE = 512;       // Size of read/write
@@ -55,6 +56,7 @@ void loop()
   res = FatFs.begin( SD_CS_PIN, SPI_HALF_SPEED );
   printError( res, "Unable to mount SD card" );
   Serial << "SD card mounted" << endl
+         << "Using SPI configuration " << SD_SPI_CONFIGURATION << endl
          << "Card size:  " << FatFs.capacity() << " MB" << endl
          << "Free space: " << FatFs.free() << " MB" << endl << endl; 
 

@@ -3,27 +3,13 @@
  * Copyright (c) 2014 by Jean-Michel Gallego
  *
  * Use version R0.10c of FatFs updated at November 26, 2014
- *
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdSpiCard Library.  If not, see
- * <http://www.gnu.org/licenses/>.
  */
  
 #ifndef FATFS_H
 #define FATFS_H
 
 #include <Arduino.h>
-#include <FatFsCard.h>
+#include <SdSpiCard.h>
 #include "ff.h"
 #include "diskio.h"
 
