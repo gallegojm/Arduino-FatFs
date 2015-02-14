@@ -29,6 +29,17 @@
 
 #define SPI_SCK_INIT_DIVISOR 400000
 
+/*
+class FatFsCard : public Sd2Card
+{
+public:
+//  bool begin( uint8_t csPin, uint8_t sckDiv = SPI_HALF_SPEED );
+  
+private:
+  uint8_t csPin;
+};
+*/
+
 class FatFsClass
 {
 public:
