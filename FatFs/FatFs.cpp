@@ -86,23 +86,6 @@ extern "C" void ff_memfree (void* mblock)
 
    =========================================================== */
 
-/*
-bool FatFsCard::begin( uint8_t csPin, uint8_t sckDiv )
-{
-uint32_t t0 = millis();
-  this.csPin = csPin;
-  SPI.begin( csPin );
-  SPI.beginTransaction( csPin, SPI_SCK_INIT_DIVISOR, MSBFIRST, SPI_MODE0 );
-
-Serial.println( (uint32_t) millis() - t0 ); 
-  // must supply min of 74 clock cycles
-  for (uint8_t i = 0; i < 10; i++) {
-    SPI.send( 0XFF );
-  }
-  
-}
-*/
-
 uint8_t ffs_result;
 
 // Initialize SD card and file system
@@ -113,10 +96,9 @@ uint8_t ffs_result;
 bool FatFsClass::begin( uint8_t csPin, uint8_t sckDiv )
 {
   ffs_result = 0;
-//   if( ! card.init( sckDiv, csPin ))
   if( ! card.begin( csPin, sckDiv ))
     return false;
-    ffs_result = f_mount( & ffs, "", 1 );
+  ffs_result = f_mount( & ffs, "", 1 );
   return ffs_result == 0;
 }
 
