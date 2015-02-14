@@ -3,25 +3,11 @@
  * Copyright (c) 2014 by Jean-Michel Gallego
  *
  * Use version R0.10c of FatFs updated at November 26, 2014
-*
- * This Library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This Library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdSpiCard Library.  If not, see
- * <http://www.gnu.org/licenses/>.
  */
  
 #include "FatFs.h"
 
-FatFsCard card;
+Sd2Card card;
 
 extern "C" int sd_status()
 {
@@ -57,7 +43,7 @@ extern "C" int sd_disk_ioctl( uint8_t cmd )
     case CTRL_SYNC :   // Make sure that data has been written  
       res = RES_OK;
       // res = spiRec() == 0XFF ? RES_OK : RES_NOTRDY ;
-      // res = card.waitNotBusy( SD_WRITE_TIMEOUT ) ? RES_OK : RES_NOTRDY ;  
+      // res = card.waitNotBusy( 100 ) ? RES_OK : RES_NOTRDY ;  
       break;  
 
     default:  
@@ -86,23 +72,6 @@ extern "C" void ff_memfree (void* mblock)
 
    =========================================================== */
 
-/*
-bool FatFsCard::begin( uint8_t csPin, uint8_t sckDiv )
-{
-uint32_t t0 = millis();
-  this.csPin = csPin;
-  SPI.begin( csPin );
-  SPI.beginTransaction( csPin, SPI_SCK_INIT_DIVISOR, MSBFIRST, SPI_MODE0 );
-
-Serial.println( (uint32_t) millis() - t0 ); 
-  // must supply min of 74 clock cycles
-  for (uint8_t i = 0; i < 10; i++) {
-    SPI.send( 0XFF );
-  }
-  
-}
-*/
-
 uint8_t ffs_result;
 
 // Initialize SD card and file system
@@ -113,10 +82,9 @@ uint8_t ffs_result;
 bool FatFsClass::begin( uint8_t csPin, uint8_t sckDiv )
 {
   ffs_result = 0;
-//   if( ! card.init( sckDiv, csPin ))
-  if( ! card.begin( csPin, sckDiv ))
+  if( ! card.init( sckDiv, csPin ))
     return false;
-    ffs_result = f_mount( & ffs, "", 1 );
+  ffs_result = f_mount( & ffs, "", 1 );
   return ffs_result == 0;
 }
 
