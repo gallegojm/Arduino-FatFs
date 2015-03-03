@@ -22,6 +22,43 @@ ExtFat sd;
 
 /* ===========================================================
 
+                    ExtFat functions
+
+   =========================================================== */
+
+bool ExtFat::timeStamp( char * path, uint16_t year, uint8_t month, uint8_t day,
+                        uint8_t hour, uint8_t minute, uint8_t second )
+{
+  SdFile file;
+  bool res;
+
+  if( ! file.open( path, O_READ ))
+    return false;
+  res = file.timestamp( T_WRITE, year, month, day, hour, minute, second );
+  file.close();
+  return res;
+}
+                        
+bool ExtFat::getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime )
+{
+  SdFile file;
+  dir_t d;
+  bool res;
+
+  if( ! file.open( path, O_READ ))
+    return false;
+  res = file.dirEntry( & d );
+  if( res )
+  {
+    * pdate = d.lastWriteDate;
+    * ptime = d.lastWriteTime;
+  }
+  file.close();
+  return res;
+}
+
+/* ===========================================================
+
                     ExtDir functions
 
    =========================================================== */
@@ -43,11 +80,17 @@ bool ExtDir::openDir( char * dirPath )
 
 bool ExtDir::nextFile()
 {
+  dir_t d;
+
   if( ! curFile.openNext( this, O_READ ))
     return false;
-  curFile.getFilename( lfn, _MAX_LFN );
+  if( ! curFile.dirEntry( & d ))
+    return false;
+  curFile.getName( lfn, _MAX_LFN );
   isdir = curFile.isSubDir();
   filesize = curFile.fileSize();
+  filelwd = d.lastWriteDate;
+  filelwt = d.lastWriteTime;
   curFile.close();
   return true;
 }

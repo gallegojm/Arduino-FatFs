@@ -50,6 +50,9 @@ class ExtFat : public SdFat
 public:
   int32_t  capacity() { return card()->cardSize() >> 11; };
   int32_t  free()     { return vol()->freeClusterCount() * vol()->blocksPerCluster() >> 11; };
+  bool     timeStamp( char * path, uint16_t year, uint8_t month, uint8_t day,
+                      uint8_t hour, uint8_t minute, uint8_t second );
+  bool     getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime );
 };
 
 extern ExtFat sd;
@@ -63,12 +66,16 @@ public:
   bool     isDir()    { return isdir; };
   char *   fileName() { return lfn; };
   uint32_t fileSize() { return filesize; };
+  uint16_t fileModDate() { return filelwd; };
+  uint16_t fileModTime() { return filelwt; };
 
 private:
   SdFile   curFile;
   char     lfn[ _MAX_LFN + 1 ];    // Buffer to store the LFN
   bool     isdir;
   uint32_t filesize;
+  uint16_t filelwd;
+  uint16_t filelwt;
 };
 
 class ExtFile : public SdFile
