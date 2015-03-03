@@ -2,8 +2,8 @@
  * This file is part of a class to wrap FatFs library from ChaN
  * Copyright (c) 2015 by Jean-Michel Gallego
  *
- * This file is based on the Arduino SdSpiCard Library
- * developped by William Greiman
+ * This file includes parts of file SdInfo.h from library SdFat
+ *   developped by William Greiman
  *
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

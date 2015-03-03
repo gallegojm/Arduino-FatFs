@@ -43,6 +43,9 @@ public:
   bool     rename( char * oldName, char * newName );
   bool     exists( char * path );
   bool     isDir( char * path );
+  bool     timeStamp( char * path, uint16_t year, uint8_t month, uint8_t day,
+                      uint8_t hour, uint8_t minute, uint8_t second );
+  bool     getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime );
 
 private:
   FATFS    ffs;
@@ -63,6 +66,8 @@ public:
   bool     isDir();
   char *   fileName();
   uint32_t fileSize();
+  uint16_t fileModDate();
+  uint16_t fileModTime();
 
 private:
   FILINFO  finfo;

@@ -74,32 +74,5 @@ DRESULT disk_ioctl( BYTE pdrv,    // Physical drive nmuber (0..)
 {
   return sd_disk_ioctl( cmd );
 }
- 
-/* 
-  DRESULT res;
-  int result;
 
-	switch (pdrv) {
-	case ATA :
-
-		// Process of the command for the ATA drive
-
-		return res;
-
-	case MMC :
-
-		// Process of the command for the MMC/SD card
-
-		return res;
-
-	case USB :
-
-		// Process of the command the USB drive
-
-		return res;
-	}
-
-	return RES_PARERR;
-}
-*/
 #endif

@@ -207,6 +207,32 @@ bool FatFsClass::isDir( char * path )
          ( finfo.fattrib & AM_DIR );
 }
 
+// Set time stamp of file or directory
+
+bool FatFsClass::timeStamp( char * path, uint16_t year, uint8_t month, uint8_t day,
+                            uint8_t hour, uint8_t minute, uint8_t second )
+{
+  FILINFO fno;
+  
+  fno.fdate = ( year - 1980 ) << 9 | month << 5 | day;
+  fno.ftime = hour << 11 | minute << 5 | second >> 1;
+  return ffs_result == f_utime( path, &fno );
+}
+
+// Return date and time of last modification
+
+bool FatFsClass::getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime )
+{
+  FILINFO finfo;
+  finfo.lfname = NULL;
+  
+  if( f_stat( path, & finfo ) != FR_OK )
+    return false;
+  * pdate = finfo.fdate;
+  * ptime = finfo.ftime;
+  return true;
+}
+
 /* ===========================================================
 
                     DirFs functions
@@ -279,6 +305,20 @@ char * DirFs::fileName()
 uint32_t DirFs::fileSize()
 {
   return finfo.fsize;
+}
+
+// Return date of last modification
+
+uint16_t DirFs::fileModDate()
+{
+  return finfo.fdate;
+}
+
+// Return time of last modification
+
+uint16_t DirFs::fileModTime()
+{
+  return finfo.ftime;
 }
 
 /* ===========================================================
@@ -458,5 +498,6 @@ uint32_t FileFs::fileSize()
 {
   return ffile.fsize;
 }
+
 
 FatFsClass FatFs;

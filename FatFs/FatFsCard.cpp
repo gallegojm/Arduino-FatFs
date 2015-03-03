@@ -2,8 +2,8 @@
  * This file is part of a class to wrap FatFs library from ChaN
  * Copyright (c) 2015 by Jean-Michel Gallego
  *
- * This file is based on the Arduino SdSpiCard Library
- * developped by William Greiman
+ * This file includes parts of file SdSpiCard.cpp from library SdFat
+ *   developped by William Greiman
  *
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -214,8 +214,8 @@ bool FatFsCard::begin( uint8_t chipSelectPin, uint8_t sckDivisor )
 
   // set SCK rate
   m_spifrec = spiFrec( sckDivisor );
-//  SPI.beginTransaction( m_CSPin, SPISettings( m_spifrec, MSBFIRST, SPI_MODE0 ));
-//  SPI.endTransaction();
+  SPI.beginTransaction( m_CSPin, SPISettings( m_spifrec, MSBFIRST, SPI_MODE0 ));
+  SPI.endTransaction();
   return true;
 
 fail:
@@ -227,7 +227,7 @@ fail:
 uint8_t FatFsCard::cardCommand( uint8_t cmd, uint32_t arg )
  {
   // select card
-  chipSelect();
+  // chipSelect();
 
   // wait if busy
   waitNotBusy( SD_WRITE_TIMEOUT );
@@ -286,35 +286,37 @@ void FatFsCard::chipSelect()
 
 //
 
-bool FatFsCard::isBusy() {
+bool FatFsCard::isBusy()
+{
   bool rtn;
-  chipSelect();
+  // chipSelect();
   for( uint8_t i = 0; i < 8; i++ )
   {
     rtn = spiReceive() != 0XFF;
     if( ! rtn )
       break;
   }
-  chipDeselect();
+  // chipDeselect();
   return rtn;
 }
 
 //
 
-bool FatFsCard::readBlock(uint32_t blockNumber, uint8_t* dst) {
-  SD_TRACE("RB", blockNumber);
+bool FatFsCard::readBlock( uint32_t blockNumber, uint8_t* dst )
+{
+  SD_TRACE( "RB", blockNumber );
   // use address if not SDHC card
-  if (type()!= SD_CARD_TYPE_SDHC) {
+  if( type() != SD_CARD_TYPE_SDHC )
     blockNumber <<= 9;
-  }
-  if (cardCommand(CMD17, blockNumber)) {
-    error(SD_CARD_ERROR_CMD17);
+  if( cardCommand( CMD17, blockNumber ))
+  {
+    error( SD_CARD_ERROR_CMD17 );
     goto fail;
   }
-  return readData(dst, 512);
+  return readData( dst, 512 );
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -325,18 +327,18 @@ bool FatFsCard::readBlocks( uint32_t block, uint8_t* dst, size_t count )
   if( ! readStart( block ))
     return false;
 
-    for( uint16_t b = 0; b < count; b++, dst += 512 )
+  for( uint16_t b = 0; b < count; b++, dst += 512 )
     if( ! readData( dst ))
       return false;
 
-      return readStop();
+  return readStop();
 }
 
 //
 
 bool FatFsCard::readData( uint8_t *dst )
 {
-  chipSelect();
+  // chipSelect();
   return readData( dst, 512 );
 }
 
@@ -351,13 +353,11 @@ bool FatFsCard::readData( uint8_t* dst, size_t count )
   // wait for start block token
   uint16_t t0 = millis();
   while(( m_status = spiReceive()) == 0XFF )
-  {
     if((( uint16_t ) millis() - t0 ) > SD_READ_TIMEOUT )
     {
       error( SD_CARD_ERROR_READ_TIMEOUT );
       goto fail;
     }
-  }
   if( m_status != DATA_START_BLOCK )
   {
     error( SD_CARD_ERROR_READ );
@@ -383,19 +383,19 @@ bool FatFsCard::readData( uint8_t* dst, size_t count )
   spiReceive();
   spiReceive();
 #endif  // USE_SD_CRC
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
 //
 
-bool FatFsCard::readStart(uint32_t blockNumber)
+bool FatFsCard::readStart( uint32_t blockNumber )
 {
-  SD_TRACE("RS", blockNumber);
+  SD_TRACE( "RS", blockNumber );
   if( type()!= SD_CARD_TYPE_SDHC )
     blockNumber <<= 9;
   if( cardCommand( CMD18, blockNumber ))
@@ -403,11 +403,11 @@ bool FatFsCard::readStart(uint32_t blockNumber)
     error( SD_CARD_ERROR_CMD18 );
     goto fail;
   }
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -420,11 +420,11 @@ bool FatFsCard::readStop()
     error(SD_CARD_ERROR_CMD12);
     goto fail;
   }
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -438,7 +438,7 @@ bool FatFsCard::waitNotBusy( uint16_t timeoutMillis )
   {
     if((( uint16_t ) millis() - t0 ) >= timeoutMillis )
       goto fail;
-//    spiYield();
+    // spiYield();
   }
   return true;
 
@@ -450,7 +450,7 @@ fail:
 
 bool FatFsCard::writeBlock( uint32_t blockNumber, const uint8_t* src )
 {
-  SD_TRACE("WB", blockNumber);
+  SD_TRACE( "WB", blockNumber );
   // use address if not SDHC card
   if( type() != SD_CARD_TYPE_SDHC )
     blockNumber <<= 9;
@@ -462,11 +462,11 @@ bool FatFsCard::writeBlock( uint32_t blockNumber, const uint8_t* src )
   if( ! writeData( DATA_START_BLOCK, src ))
     goto fail;
 
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -486,18 +486,18 @@ bool FatFsCard::writeBlocks( uint32_t block, const uint8_t* src, size_t count)
 
 bool FatFsCard::writeData( const uint8_t* src )
 {
-  chipSelect();
+  // chipSelect();
   // wait for previous write to finish
   if( ! waitNotBusy( SD_WRITE_TIMEOUT ))
     goto fail;
-  if( ! writeData( WRITE_MULTIPLE_TOKEN, src) )
+  if( ! writeData( WRITE_MULTIPLE_TOKEN, src ))
     goto fail;
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
   error( SD_CARD_ERROR_WRITE_MULTIPLE );
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -524,7 +524,7 @@ bool FatFsCard::writeData( uint8_t token, const uint8_t* src )
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -547,11 +547,11 @@ bool FatFsCard::writeStart( uint32_t blockNumber, uint32_t eraseCount )
     error( SD_CARD_ERROR_CMD25 );
     goto fail;
   }
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
@@ -559,18 +559,18 @@ fail:
 
 bool FatFsCard::writeStop()
 {
-  chipSelect();
+  // chipSelect();
   if( ! waitNotBusy( SD_WRITE_TIMEOUT ))
     goto fail;
   spiSend( STOP_TRAN_TOKEN );
   if( ! waitNotBusy( SD_WRITE_TIMEOUT ))
     goto fail;
-  chipDeselect();
+  // chipDeselect();
   return true;
 
 fail:
   error( SD_CARD_ERROR_STOP_TRAN );
-  chipDeselect();
+  // chipDeselect();
   return false;
 }
 
