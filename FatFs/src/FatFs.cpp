@@ -1,9 +1,12 @@
 /*
  * A class to wrap FatFs library from ChaN
- * Copyright (c) 2014 by Jean-Michel Gallego
+ * Copyright (c) 2018 by Jean-Michel Gallego
  *
- * Use version R0.10c of FatFs updated at November 26, 2014
-*
+ * Use version R0.12c of FatFs
+ *
+ * Use SD library for Esp8266 for the low level device control
+ * Use low level rutines of SdFat library with boards with others chips
+ *
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -14,14 +17,28 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdSpiCard Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License,
+ * If not, see <http://www.gnu.org/licenses/>.
  */
- 
+  
 #include "FatFs.h"
 
-FatFsCard card;
+#ifdef ESP8266
+  Sd2Card card;
+#else
+  SdSpiCard card;
+#endif
+
+/*
+extern "C" void sd_print( uint8_t a, uint32_t b )
+{
+//  Serial.println();
+  Serial.print( "==> " );
+  Serial.print( a );
+  Serial.print( " " );
+  Serial.println( b );
+}
+*/
 
 extern "C" int sd_status()
 {
@@ -35,17 +52,29 @@ extern "C" int sd_status()
 
 extern "C" int sd_initialize()
 {
-  return 0; // card.init( SPI_HALF_SPEED, SD_CS_PIN ) > 0 ? 0 : 1;
+  return 0;
 }
 
 extern "C" int sd_disk_read( uint8_t * buff, uint32_t sector, uint32_t count )
 {
-  return card.readBlocks( sector, buff, count ) ? 0 : 1;
+  uint8_t * b = buff;
+
+  for( uint32_t n = 0; n < count; n ++ )
+{
+    if( card.readBlock( sector + n, b ) == 0 )
+      return 1;
+}
+  return 0;
 }
 
 extern "C" int sd_disk_write( uint8_t * buff, uint32_t sector, uint32_t count )
 {
-  return card.writeBlocks( sector, buff, count ) ? 0 : 1;
+  uint8_t * b = buff;
+  
+  for( int n = 0; n < count; n ++ )
+    if( card.writeBlock( sector + n, b ) == 0 )
+      return 1;
+  return 0;
 }
 
 extern "C" int sd_disk_ioctl( uint8_t cmd )
@@ -65,9 +94,9 @@ extern "C" int sd_disk_ioctl( uint8_t cmd )
   }
 }
 
-extern "C" uint32_t get_fattime( void )
+extern "C" DWORD get_fattime( void )
 {
-  return 0;
+  return ((DWORD)(_NORTC_YEAR - 1980) << 25 | (DWORD)_NORTC_MON << 21 | (DWORD)_NORTC_MDAY << 16);
 }
 
 extern "C" void* ff_memalloc (UINT msize)
@@ -89,36 +118,44 @@ extern "C" void ff_memfree (void* mblock)
 uint8_t ffs_result;
 
 // Initialize SD card and file system
-//   chipSelectPin : SD card chip select pin
-//   divisor : SPI divisor = SPI_HALF_SPEED (default), SPI_FULL_SPEED
+//   csPin : SD card chip select pin
+//   speed : SPI speed = SPI_HALF_SPEED (default), SPI_FULL_SPEED
 // Return true if ok
 
-bool FatFsClass::begin( uint8_t csPin, uint8_t sckDiv )
+#ifdef ESP8266
+bool FatFsClass::begin( uint8_t csPin, uint32_t speed )
+#else
+bool FatFsClass::begin( uint8_t csPin, SPISettings spiSettings )
+#endif
 {
   ffs_result = 0;
-  if( ! card.begin( csPin, sckDiv ))
+#ifdef ESP8266
+  if( ! card.init( speed, csPin ))
+#else
+  if( ! card.begin( &m_spi, csPin, spiSettings ))
+#endif
     return false;
   ffs_result = f_mount( & ffs, "", 1 );
-  return ffs_result == 0;
+  return ffs_result == FR_OK;
 }
 
-// Return capacity of card in Megabytes
+// Return capacity of card in kBytes
 
 int32_t FatFsClass::capacity()
 {
-  return ( ffs.n_fatent - 2 ) * ffs.csize >> 11;
+  return ( ffs.n_fatent - 2 ) * ffs.csize >> 1; // >> 11;
 }
 
-// Return free space in Megabytes
+// Return free space in kBytes
 
 int32_t FatFsClass::free()
 {
   uint32_t fre_clust;
   FATFS * fs;
   
-  if( f_getfree( "0:", & fre_clust, &fs ) != 0 )
+  if( f_getfree( "0:", (DWORD*) & fre_clust, & fs ) != 0 )
     return -1;
-  return fre_clust * ffs.csize >> 11;
+  return fre_clust * ffs.csize >> 1; // >> 11;
 }
 
 // Return last error value
@@ -130,13 +167,12 @@ uint8_t FatFsClass::error()
 }
 
 // Make a directory
-//   path : absolute name of new directory
+//   dirPath : absolute name of new directory
 // Return true if ok
 
 bool FatFsClass::mkdir( char * path )
 {
-  char * path0 = path;
-  ffs_result = f_mkdir( path0 );
+  ffs_result = f_mkdir( path );
   return ffs_result == FR_OK; // || res == FR_EXIST;
 }
 
@@ -155,8 +191,7 @@ bool FatFsClass::rmdir( char * path )
 
 bool FatFsClass::remove( char * path )
 {
-  char * path0 = path;
-  ffs_result = f_unlink( path0 );
+  ffs_result = f_unlink( path );
   return ffs_result == FR_OK;
 }
 
@@ -180,14 +215,7 @@ bool FatFsClass::exists( char * path )
 {
   if( strcmp( path, "/" ) == 0 )
     return true;
-  
-  FILINFO finfo;
-  char    lfn[ _MAX_LFN + 1 ];    // Buffer to store the LFN
-  char *  path0 = path;
-  
-  finfo.lfname = lfn;
-  finfo.lfsize = _MAX_LFN + 1;
-  return f_stat( path0, & finfo ) == FR_OK;
+  return f_stat( path, NULL ) == FR_OK;
 }
 
 // Return true if a absolute name correspond to an existing directory
@@ -198,12 +226,7 @@ bool FatFsClass::isDir( char * path )
     return true;
   
   FILINFO finfo;
-  char    lfn[ _MAX_LFN + 1 ];    // Buffer to store the LFN
-  char *  path0 = path;
-  
-  finfo.lfname = lfn;
-  finfo.lfsize = _MAX_LFN + 1;
-  return ( f_stat( path0, & finfo ) == FR_OK ) &&
+  return ( f_stat( path, & finfo ) == FR_OK ) &&
          ( finfo.fattrib & AM_DIR );
 }
 
@@ -212,11 +235,12 @@ bool FatFsClass::isDir( char * path )
 bool FatFsClass::timeStamp( char * path, uint16_t year, uint8_t month, uint8_t day,
                             uint8_t hour, uint8_t minute, uint8_t second )
 {
-  FILINFO fno;
+  FILINFO finfo;
   
-  fno.fdate = ( year - 1980 ) << 9 | month << 5 | day;
-  fno.ftime = hour << 11 | minute << 5 | second >> 1;
-  return ffs_result == f_utime( path, &fno );
+  finfo.fdate = ( year - 1980 ) << 9 | month << 5 | day;
+  finfo.ftime = hour << 11 | minute << 5 | second >> 1;
+  ffs_result = f_utime( path, & finfo );
+  return ffs_result == FR_OK;
 }
 
 // Return date and time of last modification
@@ -224,7 +248,6 @@ bool FatFsClass::timeStamp( char * path, uint16_t year, uint8_t month, uint8_t d
 bool FatFsClass::getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime )
 {
   FILINFO finfo;
-  finfo.lfname = NULL;
   
   if( f_stat( path, & finfo ) != FR_OK )
     return false;
@@ -239,25 +262,13 @@ bool FatFsClass::getFileModTime( char * path, uint16_t * pdate, uint16_t * ptime
 
    =========================================================== */
 
-DirFs::DirFs()
-{
-  finfo.lfname = lfn;
-  finfo.lfsize = _MAX_LFN + 1;
-}
-
-DirFs::~DirFs()
-{
-  f_closedir( & dir );
-}
-
 // Open a directory
 //   dirPath : absolute name of directory
 // Return true if ok
 
 bool DirFs::openDir( char * dirPath )
 {
-  char * dirPath0 = dirPath;
-  ffs_result = f_opendir( & dir, dirPath0 );
+  ffs_result = f_opendir( & dir, dirPath );
   return ffs_result == FR_OK;
 }
 
@@ -275,7 +286,7 @@ bool DirFs::closeDir()
 bool DirFs::nextFile()
 {
   ffs_result = f_readdir( & dir, & finfo );
-  return ffs_result == 0 && finfo.fname[0] != 0;
+  return ffs_result == FR_OK && finfo.fname[0] != 0;
 }
 
 // Rewind the read index 
@@ -297,7 +308,7 @@ bool DirFs::isDir()
 
 char * DirFs::fileName()
 {
-  return finfo.lfname[0] != 0 ? finfo.lfname : finfo.fname; 
+  return finfo.fname; 
 }
 
 // Return the size of the pointed entry
@@ -335,8 +346,7 @@ uint16_t DirFs::fileModTime()
    
 bool FileFs::open( char * fileName, uint8_t mode )
 {
-  char * fileName0 = fileName;
-  ffs_result = f_open( & ffile, fileName0, mode );
+  ffs_result = f_open( & ffile, fileName, mode );
   return ffs_result == FR_OK;
 }
 
@@ -356,9 +366,18 @@ bool FileFs::close()
 
 uint32_t FileFs::write( void * buf, uint32_t lbuf )
 {
-  uint32_t nwrt;
+  uint32_t lb, nwrt0, nwrt = 0;
   
-  ffs_result = f_write( & ffile, buf, lbuf, & nwrt );
+  ffs_result = FR_OK;
+  while( nwrt < lbuf && ffs_result == FR_OK )
+  {
+    nwrt0 = 0;
+    lb = lbuf - nwrt;
+    if( lb > _MIN_SS )
+      lb = _MIN_SS;
+    ffs_result = f_write( & ffile, ( buf + nwrt ), lb, (UINT*) & nwrt0 );
+    nwrt += nwrt0;
+  }
   return nwrt;
 }
 
@@ -387,9 +406,19 @@ bool FileFs::writeChar( char car )
 
 uint32_t FileFs::read( void * buf, uint32_t lbuf )
 {
-  uint32_t nrd;
+  uint32_t lb, nrd0, nrd;
   
-  ffs_result = f_read( & ffile, buf, lbuf, & nrd );
+  nrd = 0;
+  do
+  {
+    nrd0 = 0;
+    lb = lbuf - nrd;
+    if( lb > _MIN_SS )
+      lb = _MIN_SS;
+    ffs_result = f_read( & ffile, ( buf + nrd ), lb, (UINT*) & nrd0 );
+    nrd += nrd0;
+  }
+  while( nrd0 > 0 && nrd < lbuf && ffs_result == FR_OK );
   return nrd;
 }
 
@@ -419,7 +448,7 @@ char FileFs::readChar()
   char     car;
   uint32_t nrd;
   
-  ffs_result = f_read( & ffile, & car, 1, & nrd );
+  ffs_result = f_read( & ffile, & car, 1, (UINT*) & nrd );
   return nrd == 1 ? car : -1;
 }
 
@@ -496,8 +525,7 @@ bool FileFs::seekSet( uint32_t cur )
 
 uint32_t FileFs::fileSize()
 {
-  return ffile.fsize;
+  return f_size( & ffile );
 }
-
 
 FatFsClass FatFs;

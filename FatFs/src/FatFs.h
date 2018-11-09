@@ -1,8 +1,11 @@
 /*
- * A class to wrap FatFs library from ChaN
- * Copyright (c) 2014 by Jean-Michel Gallego
+ * Classes to wrap FatFs library from ChaN
+ * Copyright (c) 2018 by Jean-Michel Gallego
  *
- * Use version R0.10c of FatFs updated at November 26, 2014
+ * Use version R0.12c of FatFs
+ *
+ * Use SD library for Esp8266 for the low level device control
+ * Use low level rutines of SdFat library with boards with others chips
  *
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +17,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with the Arduino SdSpiCard Library.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License,
+ * If not, see <http://www.gnu.org/licenses/>.
  */
  
 #ifndef FATFS_H
 #define FATFS_H
 
 #include <Arduino.h>
-#include <FatFsCard.h>
+#ifdef ESP8266
+  #include <SD.h>
+  #define SD_CS_PIN 15    // Chip Select for SD card reader on Esp8266
+#else
+  #include <SdFat.h>
+#endif
 #include "ff.h"
 #include "diskio.h"
 
@@ -32,7 +39,11 @@ class FatFsClass
 public:
   FatFsClass() {};
   
-  bool     begin( uint8_t csPin, uint8_t sckDiv = SPI_HALF_SPEED );
+#ifdef ESP8266
+  bool     begin( uint8_t csPin = SD_CS_PIN, uint32_t speed = SPI_FULL_SPEED );
+#else
+  bool     begin( uint8_t csPin, SPISettings spiSettings );
+#endif
   int32_t  capacity();
   int32_t  free();
   uint8_t  error();
@@ -49,6 +60,11 @@ public:
 
 private:
   FATFS    ffs;
+
+#ifndef ESP8266
+protected:
+  SdFatSpiDriver m_spi;
+#endif
 };
 
 extern FatFsClass FatFs;
@@ -56,8 +72,8 @@ extern FatFsClass FatFs;
 class DirFs
 {
 public:
-  DirFs();
-  ~DirFs();
+  DirFs()  {};
+  ~DirFs() { f_closedir( & dir ); };
   
   bool     openDir( char * dirPath );
   bool     closeDir();
@@ -72,7 +88,6 @@ public:
 private:
   FILINFO  finfo;
   DIR      dir;
-  char     lfn[ _MAX_LFN + 1 ];    // Buffer to store the LFN
 };
 
 class FileFs
@@ -101,5 +116,15 @@ public:
 private:
   FIL      ffile;
 };
+
+// Return true if char c is allowed in a long file name
+
+inline bool legalChar( char c )
+{
+  if( c == '"' || c == '*' || c == '?' || c == ':' || 
+      c == '<' || c == '>' || c == '|' )
+    return false;
+  return true;
+}
 
 #endif // FATFS_H
