@@ -252,6 +252,7 @@ void listDir( char * dirname )
       Serial.println( d.fileName());
       entrees ++;
     }
+    d.closeDir();
     Serial.print( entrees );
     Serial.print( " files or directories in " );
     Serial.println( dirname );
