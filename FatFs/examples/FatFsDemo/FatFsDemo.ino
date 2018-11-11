@@ -20,7 +20,7 @@
 
 // Modify according to your hardware
 // #define MY_SD_CS_PIN 4     // Chip Select for SD card reader with Ethernet shield
-   #define MY_SD_CS_PIN 53    // Chip Select for SD card reader on LaRocola
+   #define MY_SD_CS_PIN 53    // Chip Select for SD card reader on Due
 // #define MY_SD_CS_PIN 15    // Default Chip Select for SD card reader on Esp8266
 
 void setup()
@@ -45,7 +45,6 @@ void setup()
   // Mount SD card
 #ifdef ESP8266
   res = FatFs.begin(); // Use default pin 15 for chip select
-  //res = FatFs.begin( MY_SD_CS_PIN, SPI_FULL_SPEED );
 #else
   res = FatFs.begin( MY_SD_CS_PIN, SD_SCK_MHZ(50));
   // res = FatFs.begin( MY_SD_CS_PIN, SPI_HALF_SPEED );
@@ -56,28 +55,10 @@ void setup()
   // Show capacity and free space of SD card
   Serial.print( "Capacity of card:   " );
   Serial.print( FatFs.capacity());
-  Serial.println( " MBytes" );
+  Serial.println( " kBytes" );
   Serial.print( "Free space on card: " );
   Serial.print( FatFs.free());
-  Serial.println( " MBytes" );
-
-  char * fileName0 = "LaRocola.cfg";
-  Serial.print( fileName0 );
-  Serial.println( FatFs.exists( fileName0 ) ? " exists" : " don't exists" );
-  Serial.print( fileName0 );
-  Serial.print( FatFs.isDir( fileName0 ) ? " is" : " is not" );
-  Serial.println( " a directory" );
-
-  char * fileName1 = "The Beatles";
-  Serial.print( fileName1 );
-  Serial.println( FatFs.exists( fileName1 ) ? " exists" : " don't exists" );
-  Serial.print( fileName1 );
-  Serial.print( FatFs.isDir( fileName1 ) ? " is" : " is not" );
-  Serial.println( " a directory" );
-
-  char * fileName2 = "Pepito";
-  Serial.print( fileName2 );
-  Serial.println( FatFs.exists( fileName2 ) ? " exists" : " don't exists" );
+  Serial.println( " kBytes" );
 
   // List root directory
   Serial.println( "List of directories and files in root:" );
@@ -96,13 +77,8 @@ void setup()
       }
     }
 
-  Serial.println( "Second list of directories and files in root:" );
-  if( dir.rewind())
-    while( dir.nextFile())
-      Serial.println( dir.fileName());
-
   // Create directory
-  char * dirName = "/New Directory";
+  char * dirName = "/Nouveau répertoire";
   Serial.print( "\nCreate directory '" );
   Serial.print( dirName );
   Serial.println( "'" );
@@ -121,7 +97,7 @@ void setup()
 
   // Create a file in that directory
   FileFs file;
-  char * fileName = "/New Directory/A new file.txt";
+  char * fileName = "/Nouveau répertoire/Test d'écriture.txt";
   Serial.print( "\nCreate file '" );
   Serial.print( fileName );
   Serial.println( "'" );
@@ -156,10 +132,17 @@ void setup()
   Serial.print( "\nContent of '" );
   Serial.print( fileName );
   Serial.println( "' is:" );
-  char line[ 64 ];
   file.seekSet( 0 ); // set cursor to beginning of file
-  while( file.readString( line, sizeof( line )) >= 0 )
-    Serial.println( line );
+  char line[ 64 ];
+  // Read lines with readString() and print length of lines
+  int l;
+  while( ( l = file.readString( line, sizeof( line ))) >= 0 )
+  {
+    Serial.print( line );
+    Serial.print( " (Length is: " );
+    Serial.print( l );
+    Serial.println( ")" );
+  }
 
   // Size of the file
   Serial.print( "\nSize of file " );
@@ -174,7 +157,6 @@ void setup()
 
   // Rename and move the file to root
   char * newName = "/TEST.TXT";
-//  char * newName = "/Test d'écriture.txt";
   Serial.print( "\nRename file '" );
   Serial.print( fileName );
   Serial.print( "' to '" );
@@ -186,51 +168,58 @@ void setup()
   printError( res, "Error renaming file" );
 
   // Show content of directories
-  Serial.print( "\nContent of '" );
-  Serial.print( dirName );
+  listDir( dirName );
+  listDir( "/" );
+
+  // Copy file
+  char * copyName = "/Copy.txt";
+  Serial.print( "\nCopy '" );
+  Serial.print( newName );
+  Serial.print( "' to new file '" );
+  Serial.print( copyName );
   Serial.println( "' :" );
-  if( dir.openDir( "/New Directory" ))
-    while( dir.nextFile())
-      Serial.println( dir.fileName());
-  Serial.println( "\nContent of root :" );
-  if( dir.openDir( "/" ))
-    while( dir.nextFile())
-      Serial.println( dir.fileName());
+  file.open( newName, FA_OPEN_EXISTING | FA_READ );
+  FileFs copy;
+  res = copy.open( copyName, FA_WRITE | FA_READ | FA_CREATE_ALWAYS );
+  printError( res, "Error creating file" );
+  uint8_t buf[ 64 ];
+  while(( l = file.read( buf, sizeof( buf ))) > 0 )
+    if( copy.write( buf, l ) != l )
+      printError( res, "Error copying file" );
+  copy.close();
 
   // Open file for reading
   Serial.print( "\nOpen file '" );
-  Serial.print( newName );
+  Serial.print( copyName );
   Serial.println( "' :" );
-  res = file.open( newName, FA_OPEN_EXISTING | FA_READ );
+  res = copy.open( copyName, FA_OPEN_EXISTING | FA_READ );
   printError( res, "Error opening file" );
 
   // Read content of file and close it
   Serial.print( "\nContent of '" );
-  Serial.print( newName );
+  Serial.print( copyName );
   Serial.println( "' is:" );
   // Read first line byte per byte, just to demostrate use of readChar()
   char c;
   do
   {
-    c = file.readChar();
+    c = copy.readChar();
     Serial.print( c );
   }
   while( c != '\n' && c != -1 );
-  // Read next lines with readString() and print length of lines
-  int l;
-  while( ( l = file.readString( line, sizeof( line ))) >= 0 )
-  {
-    Serial.print( line );
-    Serial.print( " (Length is: " );
-    Serial.print( l );
-    Serial.println( ")" );
-  }
-  file.close();
+  // Read next lines with readString()
+  while( copy.readString( line, sizeof( line )) > 0 )
+    Serial.println( line );
+  copy.close();
     
-  // Delete the file
-  Serial.println( "\nDelete the file" );
-  res = FatFs.remove( newName );
-  printError( res, "Error deleting file" );
+  // Delete the files
+  Serial.print( "\nDelete the files '" );
+  Serial.print( newName );
+  Serial.print( "' and '" );
+  Serial.print( copyName );
+  Serial.println( "'" );
+  res = FatFs.remove( newName ) || FatFs.remove( copyName );
+  printError( res, "Error deleting files" );
 
   // Delete the directory
   Serial.print( "\nDelete directory '" );
@@ -244,6 +233,29 @@ void setup()
 
 void loop()
 {
+}
+
+//    LIST DIRECTORY
+
+void listDir( char * dirname )
+{
+  DirFs d;
+  
+  Serial.print( "\nContent of directory '" );
+  Serial.print( dirname );
+  Serial.println( "' :" );
+  if( d.openDir( dirname ))
+  {
+    uint8_t entrees = 0;
+    while( d.nextFile())
+    {
+      Serial.println( d.fileName());
+      entrees ++;
+    }
+    Serial.print( entrees );
+    Serial.print( " files or directories in " );
+    Serial.println( dirname );
+  }
 }
 
 //    PRINT ERROR STRING & STOP EXECUTION
