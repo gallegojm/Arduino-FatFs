@@ -63,7 +63,7 @@ void setup()
   // List root directory
   Serial.println( "List of directories and files in root:" );
   DirFs dir;
-  if( dir.openDir( "/" ))
+  if( dir.open( "/" ))
     while( dir.nextFile())
     {
       Serial.print( dir.fileName());
@@ -244,7 +244,7 @@ void listDir( char * dirname )
   Serial.print( "\nContent of directory '" );
   Serial.print( dirname );
   Serial.println( "' :" );
-  if( d.openDir( dirname ))
+  if( d.open( dirname ))
   {
     uint8_t entrees = 0;
     while( d.nextFile())
@@ -252,7 +252,7 @@ void listDir( char * dirname )
       Serial.println( d.fileName());
       entrees ++;
     }
-    d.closeDir();
+    d.close();
     Serial.print( entrees );
     Serial.print( " files or directories in " );
     Serial.println( dirname );
