@@ -87,6 +87,6 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-  return sd_disk_ioctl( cmd, buff );
+  return sd_disk_ioctl( cmd );
 }
 
