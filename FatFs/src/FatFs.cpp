@@ -77,7 +77,7 @@ extern "C" int sd_disk_write( uint8_t * buff, uint32_t sector, uint32_t count )
   return 0;
 }
 
-extern "C" int sd_disk_ioctl( uint8_t cmd )
+extern "C" int sd_disk_ioctl( uint8_t cmd, void * buff )
 {
   DRESULT res = RES_ERROR;
   
@@ -92,6 +92,8 @@ extern "C" int sd_disk_ioctl( uint8_t cmd )
     default:  
       res = RES_PARERR;  
   }
+  
+  return res;
 }
 
 extern "C" DWORD get_fattime( void )
